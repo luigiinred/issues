@@ -7,7 +7,10 @@ import {
   View,
   Image,
   Button,
-  KeyboardAvoidingView
+  FlatList,
+  ListItem,
+  KeyboardAvoidingView,
+  TouchableHighlight
 } from "react-native";
 import { connect } from "react-redux";
 import { Redirect } from "react-router-native";
@@ -28,15 +31,19 @@ class Dashboard extends Component {
 
   render() {
     return (
-      <KeyboardAvoidingView behavior="padding" style={styles.background}>
-        <View style={styles.container}>
-          <View style={styles.formContainer}>
-            <Text>
-              {this.props.loading ? "Loading" : "This is a Dashboard"}
-            </Text>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
+      <View>
+        {this.props.loading
+          ? <Text>loading</Text>
+          : <FlatList
+              data={this.props.repositories}
+              renderItem={({ item }) =>
+                <TouchableHighlight>
+                  <Text>
+                    {item.name}
+                  </Text>
+                </TouchableHighlight>}
+            />}
+      </View>
     );
   }
 }
@@ -95,7 +102,7 @@ export default graphql(
     options: ({ login, name }) => ({
       variables: {
         states: ["OPEN"],
-        number_of_repos: 5,
+        number_of_repos: 25,
         login,
         name,
         before: null
