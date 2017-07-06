@@ -1,23 +1,58 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+import Routes from "./routes.js";
+import { createStore, combineReducers, applyMiddleware, compose } from "redux";
+import { Provider } from "react-redux";
 
-export default class App extends React.Component {
-  render() {
-    return (
-      <View style={styles.container}>
-        <Text>Open up App.js to start working on your app!</Text>
-        <Text>Changes you make will automatically reload.</Text>
-        <Text>Shake your phone to open the developer menu.</Text>
-      </View>
-    );
-  }
-}
+import createSagaMiddleware from "redux-saga";
+import rootReducer from "./reducers/";
+import sagas from "./sagas/";
+import auth from "./reducers/auth";
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+import { graphql, ApolloProvider } from "react-apollo";
+import ApolloClient, { createNetworkInterface } from "apollo-client";
+
+const sagaMiddleware = createSagaMiddleware();
+
+const networkInterface = createNetworkInterface({
+  uri: "https://api.github.com/graphql"
 });
+
+networkInterface.use([
+  {
+    applyMiddleware(req, next) {
+      if (!req.options.headers) {
+        req.options.headers = {}; // Create the header object if needed.
+      }
+
+      // Send the login token in the Authorization header
+      req.options.headers.authorization = `Bearer ${store.getState().auth
+        .token}`;
+      next();
+    }
+  }
+]);
+const client = new ApolloClient({
+  networkInterface
+});
+const store = createStore(
+  combineReducers({
+    auth: auth,
+    apollo: client.reducer()
+  }),
+  {}, // initial state
+  compose(
+    applyMiddleware(client.middleware(), sagaMiddleware),
+    // If you are using the devToolsExtension, you can add it here also
+    typeof window.__REDUX_DEVTOOLS_EXTENSION__ !== "undefined"
+      ? window.__REDUX_DEVTOOLS_EXTENSION__()
+      : f => f
+  )
+);
+
+sagaMiddleware.run(sagas);
+
+export default (App = () =>
+  <ApolloProvider store={store} client={client}>
+    <Routes />
+  </ApolloProvider>);
