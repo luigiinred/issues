@@ -10,7 +10,8 @@ import {
   FlatList,
   ListItem,
   KeyboardAvoidingView,
-  TouchableHighlight
+  TouchableHighlight,
+  NavigatorIOS
 } from "react-native";
 import { connect } from "react-redux";
 import { Redirect } from "react-router-native";
@@ -31,53 +32,68 @@ class Dashboard extends Component {
 
   render() {
     return (
-      <View>
+      <View style={styles.container}>
         {this.props.loading
           ? <Text>loading</Text>
           : <FlatList
               data={this.props.repositories}
               renderItem={({ item }) =>
-                <TouchableHighlight>
-                  <Text>
+                <TouchableHighlight onPress={() => {}}>
+                  <Text style={styles.row}>
                     {item.name}
                   </Text>
                 </TouchableHighlight>}
+              ItemSeparatorComponent={() =>
+                <View style={styles.listView}>
+                  <View style={styles.separator} />
+                </View>}
+              ListFooterComponent={() =>
+                <View style={styles.listView}>
+                  <View style={styles.footer} />
+                </View>}
+              ListHeaderComponent={() =>
+                <View style={styles.listView}>
+                  <View style={styles.footer} />
+                </View>}
             />}
       </View>
     );
   }
 }
-
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    flexDirection: "row",
-    flexGrow: 1,
-    alignItems: "center",
-    backgroundColor: "#0070ff"
-  },
   container: {
     flex: 1,
-    flexDirection: "row"
+    backgroundColor: "#efeff4"
   },
-  formContainer: {
-    padding: 20,
-    flex: 1,
-    flexDirection: "column",
+  header: {
+    flexDirection: "row",
+    padding: 8,
+    paddingLeft: 16,
+    borderBottomWidth: 0.5,
+    backgroundColor: "#efeff4",
+    borderColor: "#e3e3e3"
+  },
+  headerText: {
+    fontWeight: "500",
+    color: "#6d6d6d"
+  },
+  separator: {
+    height: 1,
+    marginLeft: 16,
+    backgroundColor: "#e3e3e3"
+  },
+  footer: {
+    height: 1,
+
+    backgroundColor: "#e3e3e3"
+  },
+  row: {
+    flexDirection: "row",
+    padding: 16,
     backgroundColor: "#ffffff"
   },
-  logoContainer: {
-    alignItems: "center",
-    flexGrow: 1,
-    justifyContent: "center"
-  },
-
-  input: {
-    flexGrow: 1,
-    flexDirection: "row",
-
-    height: 40,
-    marginBottom: 20
+  listView: {
+    backgroundColor: "#fff"
   }
 });
 
@@ -117,13 +133,15 @@ export default graphql(
         console.log(data.error);
       }
       console.log(data);
+      if (!data.viewer) {
+        return {
+          loading: false,
+          repositories: []
+        };
+      }
       return {
         loading: false,
         repositories: data.viewer.repositories.nodes
-        // We don't want our UI component to be aware of the special shape of
-        // GraphQL connections, so we transform the props into a simple array
-        // directly in the container. We also reverse the list since we want to
-        // start from the most recent issue and scroll down
       };
     }
   }

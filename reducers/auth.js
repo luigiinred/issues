@@ -1,5 +1,10 @@
 const auth = (state = {}, action) => {
   switch (action.type) {
+    case "LOGOUT_REQUEST":
+      return Object.assign({}, state, {
+        token: null,
+        error: null
+      });
     case "LOGIN_REQUEST":
       return Object.assign({}, state, {
         error: null

@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { connect } from "react-redux";
 import { Redirect } from "react-router-native";
+import { client } from "../App";
 
 class Login extends Component {
   constructor(props) {
@@ -27,12 +28,14 @@ class Login extends Component {
   componentWillUnmount() {}
 
   login() {
-    this.props.dispatch({
-      type: "LOGIN_REQUEST",
-      data: {
-        email: this.state.email,
-        password: this.state.password
-      }
+    client.resetStore().then(() => {
+      this.props.dispatch({
+        type: "LOGIN_REQUEST",
+        data: {
+          email: this.state.email,
+          password: this.state.password
+        }
+      });
     });
   }
 

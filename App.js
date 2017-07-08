@@ -11,6 +11,8 @@ import auth from "./reducers/auth";
 
 import { graphql, ApolloProvider } from "react-apollo";
 import ApolloClient, { createNetworkInterface } from "apollo-client";
+import { persistStore, autoRehydrate } from "redux-persist";
+import { AsyncStorage } from "react-native";
 
 const sagaMiddleware = createSagaMiddleware();
 
@@ -32,9 +34,11 @@ networkInterface.use([
     }
   }
 ]);
-const client = new ApolloClient({
+
+export const client = new ApolloClient({
   networkInterface
 });
+
 const store = createStore(
   combineReducers({
     auth: auth,
@@ -42,6 +46,7 @@ const store = createStore(
   }),
   {}, // initial state
   compose(
+    autoRehydrate(),
     applyMiddleware(client.middleware(), sagaMiddleware),
     // If you are using the devToolsExtension, you can add it here also
     typeof window.__REDUX_DEVTOOLS_EXTENSION__ !== "undefined"
@@ -51,6 +56,7 @@ const store = createStore(
 );
 
 sagaMiddleware.run(sagas);
+persistStore(store, { storage: AsyncStorage });
 
 export default (App = () =>
   <ApolloProvider store={store} client={client}>
