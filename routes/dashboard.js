@@ -11,21 +11,20 @@ import {
   ListItem,
   KeyboardAvoidingView,
   TouchableHighlight,
-  NavigatorIOS
+  NavigatorIOS,
+  ActivityIndicator
 } from "react-native";
 import { connect } from "react-redux";
 import { Redirect } from "react-router-native";
 import { graphql } from "react-apollo";
 import gql from "graphql-tag";
+import _ from "lodash";
 
 class Dashboard extends Component {
   constructor(props) {
     super(props);
-    console.log(props);
   }
-  componentWillReceiveProps(props) {
-    console.log(props);
-  }
+  componentWillReceiveProps(props) {}
   componentWillMount() {}
 
   componentWillUnmount() {}
@@ -33,34 +32,45 @@ class Dashboard extends Component {
   render() {
     return (
       <View style={styles.container}>
-        {this.props.loading
-          ? <Text>loading</Text>
-          : <FlatList
-              data={this.props.repositories}
-              renderItem={({ item }) =>
-                <TouchableHighlight onPress={() => {}}>
-                  <Text style={styles.row}>
-                    {item.name}
-                  </Text>
-                </TouchableHighlight>}
-              ItemSeparatorComponent={() =>
-                <View style={styles.listView}>
-                  <View style={styles.separator} />
-                </View>}
-              ListFooterComponent={() =>
-                <View style={styles.listView}>
-                  <View style={styles.footer} />
-                </View>}
-              ListHeaderComponent={() =>
-                <View style={styles.listView}>
-                  <View style={styles.footer} />
-                </View>}
-            />}
+        {this.props.loading &&
+          <ActivityIndicator
+            style={styles.logoContainer}
+            animating
+            size="large"
+          />}
+        <FlatList
+          style={styles.container}
+          data={this.props.repositories}
+          onEndReached={this.props.fetchNextPage}
+          renderItem={({ item }) =>
+            <TouchableHighlight onPress={() => {}}>
+              <Text style={styles.row}>
+                {item.node.name}
+              </Text>
+            </TouchableHighlight>}
+          ItemSeparatorComponent={() =>
+            <View style={styles.listView}>
+              <View style={styles.separator} />
+            </View>}
+          ListFooterComponent={() =>
+            <View style={styles.listView}>
+              <View style={styles.footer} />
+            </View>}
+          ListHeaderComponent={() =>
+            <View style={styles.listView}>
+              <View style={styles.footer} />
+            </View>}
+        />
       </View>
     );
   }
 }
 const styles = StyleSheet.create({
+  logoContainer: {
+    alignItems: "center",
+    flexGrow: 1,
+    justifyContent: "center"
+  },
   container: {
     flex: 1,
     backgroundColor: "#efeff4"
@@ -103,12 +113,19 @@ const styles = StyleSheet.create({
 // })(Login);
 export default graphql(
   gql`
-    query GetRepositories($number_of_repos: Int!) {
+    query GetRepositories($number_of_repos: Int!, $before: String) {
       viewer {
         name
-        repositories(last: $number_of_repos) {
-          nodes {
-            name
+        repositories(last: $number_of_repos, before: $before) {
+          edges {
+            node {
+              id
+              name
+            }
+            cursor
+          }
+          pageInfo {
+            hasPreviousPage
           }
         }
       }
@@ -117,7 +134,6 @@ export default graphql(
   {
     options: ({ login, name }) => ({
       variables: {
-        states: ["OPEN"],
         number_of_repos: 25,
         login,
         name,
@@ -132,16 +148,35 @@ export default graphql(
       if (data.error) {
         console.log(data.error);
       }
-      console.log(data);
+      console.log(data.viewer);
       if (!data.viewer) {
         return {
           loading: false,
           repositories: []
         };
       }
+
+      const fetchNextPage = () => {
+        return data.fetchMore({
+          variables: {
+            before: _.first(data.viewer.repositories.edges).cursor,
+            number_of_repos: 25
+          },
+          updateQuery: (previousResult, { fetchMoreResult }) => {
+            return {
+              repositories: [
+                ...[...data.viewer.repositories.edges].reverse(),
+                previousResult
+              ]
+            };
+          }
+        });
+      };
+
       return {
         loading: false,
-        repositories: data.viewer.repositories.nodes
+        repositories: [...data.viewer.repositories.edges].reverse(),
+        fetchNextPage
       };
     }
   }

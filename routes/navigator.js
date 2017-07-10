@@ -45,7 +45,6 @@ class NavigatorIOSApp extends Component {
           style={{ flex: 1 }}
           barTintColor="#FF5722"
           tintColor="#ffffff"
-          translucent={false}
           titleTextColor="#ffffff"
         />
       </View>
